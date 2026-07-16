@@ -5,7 +5,7 @@
    Naikkan nomor versi di bawah setiap kali kamu mengubah
    index.html, agar pengguna mendapat versi terbaru.
    ============================================================ */
-const VERSI = 'catatan-uang-v1';
+const VERSI = 'catatan-uang-v2';
 
 // Berkas inti yang disimpan sejak awal (kerangka aplikasi)
 const INTI = [

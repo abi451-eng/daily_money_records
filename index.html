@@ -36,6 +36,7 @@
     --green:#1C7A52; --green-bg:#E4F1E9; --green-ink:#14593C;
     --red:#BE4630; --red-bg:#F8E7E1; --red-ink:#94321F;
     --gold:#C2872A;
+    --amber-bg:#FBEEDA; --amber-ink:#8A5A12; --amber-line:rgba(194,135,42,.35);
     --r-md:12px; --r-lg:18px; --r-xl:26px;
     --shadow:0 8px 30px rgba(43,39,34,.08);
   }
@@ -47,6 +48,7 @@
     --green:#36A873; --green-bg:rgba(54,168,115,.16); --green-ink:#7BD8AE;
     --red:#D85F45; --red-bg:rgba(216,95,69,.18); --red-ink:#F0A18F;
     --gold:#D6A23F;
+    --amber-bg:rgba(214,162,63,.16); --amber-ink:#E7BE7A; --amber-line:rgba(214,162,63,.35);
     --shadow:0 8px 30px rgba(0,0,0,.45);
   }
   body, .hero, .scard, .row, .act, .sheet, .icon-btn, .data-btn,
@@ -240,6 +242,33 @@
     .sheet{box-shadow:none; max-height:none; animation:none; border-radius:0; max-width:100%; padding:0;}
     .close-x, .lap-print-btn{display:none !important;}
   }
+  /* ===== Dompet (Tunai / Transfer) ===== */
+  .wallets{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;}
+  .wallet{display:flex; align-items:center; gap:10px; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-md); padding:11px 12px;}
+  .wal-ic{width:34px; height:34px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .wal-ic.cash{background:var(--green-bg); color:var(--green-ink);}
+  .wal-ic.tf{background:var(--amber-bg); color:var(--amber-ink);}
+  .wal-lbl{margin:0; font-size:12px; color:var(--ink-soft);}
+  .wal-val{margin:0; font-size:15px; font-weight:700; color:var(--ink);}
+  /* ===== Pilihan (metode / status) ===== */
+  .seg{display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:8px;}
+  .seg button{border:1px solid var(--line-2); background:var(--surface); color:var(--ink-soft); font-family:'Plus Jakarta Sans',sans-serif; font-weight:600; font-size:14px; padding:13px 8px; border-radius:12px; cursor:pointer; transition:background .15s, color .15s, border-color .15s;}
+  .seg button.active{background:var(--gold); color:#fff; border-color:var(--gold);}
+  .btn-primary.disabled, .btn-primary:disabled{opacity:.45; cursor:not-allowed;}
+  /* ===== Pengingat transfer menunggu ===== */
+  .pending{background:var(--amber-bg); border:1px solid var(--amber-line); border-radius:var(--r-lg); padding:14px 15px; margin-bottom:16px;}
+  .pending-title{margin:0 0 3px; font-size:14px; font-weight:700; color:var(--amber-ink);}
+  .pending-note{margin:0 0 4px; font-size:12px; color:var(--amber-ink); opacity:.85;}
+  .pending-item{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); padding:10px 12px; margin-top:8px;}
+  .pi-info{flex:1; min-width:0;}
+  .pi-nm{margin:0; font-size:14px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pi-sub{margin:0; font-size:12px; color:var(--ink-soft);}
+  .pi-act{display:flex; flex-direction:column; gap:6px; flex-shrink:0;}
+  .pi-ok{border:none; background:var(--green); color:#fff; font-family:'Plus Jakarta Sans',sans-serif; font-weight:600; font-size:12.5px; padding:8px 12px; border-radius:9px; cursor:pointer;}
+  .pi-cancel{border:none; background:transparent; color:var(--ink-faint); font-family:'Plus Jakarta Sans',sans-serif; font-weight:600; font-size:12px; padding:2px; cursor:pointer;}
+  .dot.wait{background:var(--amber-bg); color:var(--amber-ink);}
+  .amt.wait{color:var(--amber-ink);}
+  .wait-tag{color:var(--amber-ink); font-weight:600;}
 </style>
 
 </head>
@@ -259,15 +288,27 @@
   </header>
 
   <main>
+    <div id="pendingBox"></div>
+
     <section class="hero">
       <div class="month-nav">
         <button id="prevMonth" onclick="changeMonth(-1)" aria-label="Bulan sebelumnya">&#8249;</button>
         <span class="label" id="monthLabel">—</span>
         <button id="nextMonth" onclick="changeMonth(1)" aria-label="Bulan berikutnya">&#8250;</button>
       </div>
-      <p class="saldo-label">Sisa uang sekarang</p>
+      <p class="saldo-label">Total uang sekarang</p>
       <p class="saldo" id="saldo">Rp 0</p>
       <span class="badge up" id="netBadge">Bulan ini Rp 0</span>
+      <div class="wallets">
+        <div class="wallet">
+          <div class="wal-ic cash"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></div>
+          <div><p class="wal-lbl">Tunai</p><p class="wal-val" id="saldoCash">Rp 0</p></div>
+        </div>
+        <div class="wallet">
+          <div class="wal-ic tf"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10h11l-3-3M17 14H6l3 3"/></svg></div>
+          <div><p class="wal-lbl">Transfer</p><p class="wal-val" id="saldoTransfer">Rp 0</p></div>
+        </div>
+      </div>
     </section>
 
     <div class="actions">
@@ -316,6 +357,20 @@
     <div class="field">
       <label>Tanggal</label>
       <input id="fTanggal" type="date">
+    </div>
+    <div class="field">
+      <label>Metode</label>
+      <div class="seg" id="metodeSeg">
+        <button type="button" data-metode="cash" onclick="setMetode('cash')">Tunai</button>
+        <button type="button" data-metode="transfer" onclick="setMetode('transfer')">Transfer</button>
+      </div>
+    </div>
+    <div class="field" id="statusRow" style="display:none">
+      <label>Uang transfernya sudah masuk?</label>
+      <div class="seg" id="statusSeg">
+        <button type="button" data-status="masuk" onclick="setStatus('masuk')">Sudah masuk</button>
+        <button type="button" data-status="menunggu" onclick="setStatus('menunggu')">Belum masuk</button>
+      </div>
     </div>
     <button class="btn-primary green" id="fSimpan" onclick="submitForm()">Simpan</button>
     <button class="btn-danger-text" id="fHapus" style="display:none" onclick="deleteCurrent()">Hapus catatan ini</button>
@@ -379,10 +434,21 @@
   let viewMonth = currentMonthKey();
   let editingId = null;
   let formJenis = 'masuk';
+  let formMetode = null;   // 'cash' | 'transfer'
+  let formStatus = null;   // 'masuk' | 'menunggu' (khusus transfer masuk)
 
   function load(){
-    try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
-    return { config:{ nama:'', lokasi:'' }, entries:[] };
+    let st;
+    try{ const raw = localStorage.getItem(KEY); if(raw) st = JSON.parse(raw); }catch(e){}
+    if(!st || typeof st!=='object') st = { config:{ nama:'', lokasi:'' }, entries:[] };
+    if(!st.config) st.config = { nama:'', lokasi:'' };
+    if(!Array.isArray(st.entries)) st.entries = [];
+    // Migrasi data lama: catatan tanpa metode dianggap Tunai & sudah masuk
+    st.entries.forEach(function(e){
+      if(!e.metode) e.metode = 'cash';
+      if(!e.status) e.status = 'masuk';
+    });
+    return st;
   }
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
 
@@ -403,17 +469,32 @@
   function formatRp(n){const sign=n<0?'−':'';return sign+'Rp '+Math.abs(Math.round(n)).toLocaleString('id-ID');}
 
   // ====== Hitungan ======
-  const saldoTotal=()=>state.entries.reduce((s,e)=>s+(e.jenis==='masuk'?e.jumlah:-e.jumlah),0);
+  // Sebuah catatan "dihitung" ke saldo kalau bukan transfer-masuk yang masih menunggu
+  function isCounted(e){ if(e.jenis==='masuk' && e.metode==='transfer') return e.status==='masuk'; return true; }
+  function saldoBy(metode){
+    return state.entries.reduce((s,e)=>{
+      if(e.metode!==metode || !isCounted(e)) return s;
+      return s + (e.jenis==='masuk' ? e.jumlah : -e.jumlah);
+    },0);
+  }
+  const saldoCash=()=>saldoBy('cash');
+  const saldoTransfer=()=>saldoBy('transfer');
+  const saldoTotal=()=>saldoCash()+saldoTransfer();
+  const pendingList=()=>state.entries.filter(e=>e.jenis==='masuk' && e.metode==='transfer' && e.status==='menunggu');
   const monthEntries=k=>state.entries.filter(e=>monthOf(e.tgl)===k);
-  const sumJenis=(arr,j)=>arr.filter(e=>e.jenis===j).reduce((s,e)=>s+e.jumlah,0);
+  const sumMasukCounted=arr=>arr.filter(e=>e.jenis==='masuk' && isCounted(e)).reduce((s,e)=>s+e.jumlah,0);
+  const sumKeluar=arr=>arr.filter(e=>e.jenis==='keluar').reduce((s,e)=>s+e.jumlah,0);
+  const metodeLabel=m=> m==='transfer' ? 'Transfer' : 'Tunai';
 
   // ====== Render utama ======
   function render(){
     document.getElementById('monthLabel').textContent = monthLabel(viewMonth);
     document.getElementById('saldo').textContent = formatRp(saldoTotal());
+    document.getElementById('saldoCash').textContent = formatRp(saldoCash());
+    document.getElementById('saldoTransfer').textContent = formatRp(saldoTransfer());
 
     const me = monthEntries(viewMonth);
-    const masuk = sumJenis(me,'masuk'), keluar = sumJenis(me,'keluar');
+    const masuk = sumMasukCounted(me), keluar = sumKeluar(me);
     const net = masuk - keluar;
     const badge = document.getElementById('netBadge');
     badge.className = 'badge ' + (net<0?'down':'up');
@@ -425,8 +506,28 @@
     document.getElementById('prevMonth').disabled = false;
     document.getElementById('nextMonth').disabled = (viewMonth >= currentMonthKey());
 
+    renderPending();
     renderRiwayat(me);
     save();
+  }
+
+  function renderPending(){
+    const box = document.getElementById('pendingBox');
+    const list = pendingList().slice().sort((a,b)=>(a.tgl+a.waktu).localeCompare(b.tgl+b.waktu));
+    if(list.length===0){ box.innerHTML=''; return; }
+    let h = '<div class="pending"><p class="pending-title">Transfer menunggu masuk ('+list.length+')</p>';
+    h += '<p class="pending-note">Belum dihitung ke saldo. Cek dulu, kalau uangnya sudah masuk tekan tombolnya.</p>';
+    list.forEach(e=>{
+      h += '<div class="pending-item">'
+        + '<div class="pi-info"><p class="pi-nm">'+escapeHtml(e.catatan||'Transfer')+'</p>'
+        + '<p class="pi-sub">'+formatRp(e.jumlah)+' &middot; '+dayLabel(e.tgl)+'</p></div>'
+        + '<div class="pi-act">'
+        + '<button class="pi-ok" onclick="confirmPending('+e.id+')">Sudah masuk</button>'
+        + '<button class="pi-cancel" onclick="cancelPending('+e.id+')">Batalkan</button>'
+        + '</div></div>';
+    });
+    h += '</div>';
+    box.innerHTML = h;
   }
 
   function renderRiwayat(entries){
@@ -441,15 +542,18 @@
     let html='';
     Object.keys(groups).sort().reverse().forEach(tgl=>{
       const items = groups[tgl];
-      const dayNet = items.reduce((s,e)=>s+(e.jenis==='masuk'?e.jumlah:-e.jumlah),0);
+      const dayNet = items.reduce((s,e)=> s + (isCounted(e) ? (e.jenis==='masuk'?e.jumlah:-e.jumlah) : 0), 0);
       html += '<div class="day-group"><div class="day-head"><span>'+dayLabel(tgl)+'</span><span>'+(dayNet>=0?'+':'')+formatRp(dayNet)+'</span></div>';
       items.forEach(e=>{
         const masuk = e.jenis==='masuk';
+        const wait = masuk && e.metode==='transfer' && e.status==='menunggu';
+        const sub = metodeLabel(e.metode)+' &middot; '+e.waktu + (wait?' &middot; <span class="wait-tag">menunggu</span>':'');
+        const amtCls = wait ? 'wait' : (masuk?'green':'red');
         html += '<div class="row" onclick="openEdit('+e.id+')">'
-          + '<div class="dot '+e.jenis+'">'+(masuk?'+':'&minus;')+'</div>'
+          + '<div class="dot '+(wait?'wait':e.jenis)+'">'+(masuk?'+':'&minus;')+'</div>'
           + '<div class="meta"><p class="nm">'+escapeHtml(e.catatan||(masuk?'Uang masuk':'Uang keluar'))+'</p>'
-          + '<p class="sub">'+(masuk?'Uang masuk':'Uang keluar')+' &middot; '+e.waktu+'</p></div>'
-          + '<span class="amt '+(masuk?'green':'red')+'">'+(masuk?'+':'&minus;')+formatRp(e.jumlah)+'</span></div>';
+          + '<p class="sub">'+sub+'</p></div>'
+          + '<span class="amt '+amtCls+'">'+(masuk?'+':'&minus;')+formatRp(e.jumlah)+'</span></div>';
       });
       html += '</div>';
     });
@@ -470,11 +574,30 @@
   fJumlah.addEventListener('input',()=>{
     const d=fJumlah.value.replace(/\D/g,'');
     fJumlah.value = d ? parseInt(d,10).toLocaleString('id-ID') : '';
+    validateForm();
   });
   const parseJumlah=()=>parseInt(fJumlah.value.replace(/\D/g,'')||'0',10);
 
+  function setMetode(m){ formMetode=m; if(m!=='transfer') formStatus=null; updateFormUI(); }
+  function setStatus(s){ formStatus=s; updateFormUI(); }
+  function needStatus(){ return formJenis==='masuk' && formMetode==='transfer'; }
+
+  function updateFormUI(){
+    document.querySelectorAll('#metodeSeg button').forEach(b=>b.classList.toggle('active', b.getAttribute('data-metode')===formMetode));
+    document.getElementById('statusRow').style.display = needStatus() ? 'block' : 'none';
+    document.querySelectorAll('#statusSeg button').forEach(b=>b.classList.toggle('active', b.getAttribute('data-status')===formStatus));
+    validateForm();
+  }
+  function validateForm(){
+    let ok = parseJumlah()>0 && !!formMetode;
+    if(needStatus()) ok = ok && !!formStatus;
+    const btn=document.getElementById('fSimpan');
+    btn.disabled = !ok;
+    btn.classList.toggle('disabled', !ok);
+  }
+
   function openForm(jenis){
-    formJenis=jenis; editingId=null;
+    formJenis=jenis; editingId=null; formMetode=null; formStatus=null;
     const masuk = jenis==='masuk';
     const t=document.getElementById('formTitle');
     t.textContent = masuk?'Catat uang masuk':'Catat uang keluar';
@@ -485,13 +608,15 @@
     const btn=document.getElementById('fSimpan');
     btn.textContent='Simpan'; btn.className='btn-primary '+(masuk?'green':'red');
     document.getElementById('fHapus').style.display='none';
+    updateFormUI();
     openOverlay('formOverlay');
     setTimeout(()=>fJumlah.focus(),250);
   }
 
   function openEdit(id){
     const e=state.entries.find(x=>x.id===id); if(!e)return;
-    formJenis=e.jenis; editingId=id;
+    formJenis=e.jenis; editingId=id; formMetode=e.metode||'cash';
+    formStatus = (e.jenis==='masuk' && e.metode==='transfer') ? (e.status||'masuk') : null;
     const masuk=e.jenis==='masuk';
     const t=document.getElementById('formTitle');
     t.textContent='Ubah catatan'; t.className=masuk?'green':'red';
@@ -501,19 +626,23 @@
     const btn=document.getElementById('fSimpan');
     btn.textContent='Simpan perubahan'; btn.className='btn-primary '+(masuk?'green':'red');
     document.getElementById('fHapus').style.display='block';
+    updateFormUI();
     openOverlay('formOverlay');
   }
 
   function submitForm(){
     const jumlah=parseJumlah();
     if(jumlah<=0){ alert('Isi jumlah uangnya dulu ya.'); fJumlah.focus(); return; }
+    if(!formMetode){ alert('Pilih dulu: Tunai atau Transfer.'); return; }
+    if(needStatus() && !formStatus){ alert('Pilih dulu: transfernya sudah masuk atau belum.'); return; }
     const tgl=document.getElementById('fTanggal').value||todayISO();
     const catatan=document.getElementById('fCatatan').value.trim();
+    const status = needStatus() ? formStatus : 'masuk';
     if(editingId){
       const e=state.entries.find(x=>x.id===editingId);
-      if(e){ e.jumlah=jumlah; e.catatan=catatan; e.tgl=tgl; }
+      if(e){ e.jumlah=jumlah; e.catatan=catatan; e.tgl=tgl; e.metode=formMetode; e.status=status; }
     }else{
-      state.entries.push({ id:Date.now(), jenis:formJenis, jumlah:jumlah, catatan:catatan, tgl:tgl, waktu:nowTime() });
+      state.entries.push({ id:Date.now(), jenis:formJenis, jumlah:jumlah, catatan:catatan, tgl:tgl, waktu:nowTime(), metode:formMetode, status:status });
     }
     viewMonth = monthOf(tgl);
     closeOverlay('formOverlay');
@@ -526,6 +655,18 @@
       state.entries=state.entries.filter(x=>x.id!==editingId);
       closeOverlay('formOverlay');
       render();
+    }
+  }
+
+  // ====== Transfer menunggu ======
+  function confirmPending(id){
+    const e=state.entries.find(x=>x.id===id);
+    if(e){ e.status='masuk'; save(); render(); }
+  }
+  function cancelPending(id){
+    if(confirm('Batalkan transfer ini? Catatannya akan dihapus.')){
+      state.entries=state.entries.filter(x=>x.id!==id);
+      save(); render();
     }
   }
 
@@ -592,7 +733,7 @@
   // ====== Laporan ======
   function openLaporan(){
     const me=monthEntries(viewMonth);
-    const masuk=sumJenis(me,'masuk'), keluar=sumJenis(me,'keluar'), net=masuk-keluar;
+    const masuk=sumMasukCounted(me), keluar=sumKeluar(me), net=masuk-keluar;
     document.getElementById('lapTitle').textContent='Laporan '+monthLabel(viewMonth);
     let body='';
     if(state.config.nama||state.config.lokasi){
@@ -611,8 +752,10 @@
       body+='<table class="lap-table"><thead><tr><th>Tgl</th><th>Catatan</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>';
       sorted.forEach(e=>{
         const d=e.tgl.split('-')[2];
-        body+='<tr><td>'+d+'</td><td>'+escapeHtml(e.catatan||(e.jenis==='masuk'?'Uang masuk':'Uang keluar'))
-          +'</td><td class="r" style="color:'+(e.jenis==='masuk'?'var(--green)':'var(--red)')+'">'
+        const wait = e.jenis==='masuk' && e.metode==='transfer' && e.status==='menunggu';
+        const ket = escapeHtml(e.catatan||(e.jenis==='masuk'?'Uang masuk':'Uang keluar')) + ' ('+metodeLabel(e.metode)+(wait?', menunggu':'')+')';
+        body+='<tr><td>'+d+'</td><td>'+ket
+          +'</td><td class="r" style="color:'+(wait?'var(--amber-ink)':(e.jenis==='masuk'?'var(--green)':'var(--red)'))+'">'
           +(e.jenis==='masuk'?'+':'−')+formatRp(e.jumlah)+'</td></tr>';
       });
       body+='</tbody></table>';
@@ -630,12 +773,15 @@
     o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
   });
 
-  applyTheme();
-  if(window.matchMedia){
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
-      if((state.config.tema||'auto')==='auto') applyTheme();
-    });
-  }
+  try { applyTheme(); } catch(e) {}
+  try {
+    if(window.matchMedia){
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      var onSysChange = function(){ if((state.config.tema||'auto')==='auto') applyTheme(); };
+      if(mq.addEventListener) mq.addEventListener('change', onSysChange);
+      else if(mq.addListener) mq.addListener(onSysChange);   // dukungan HP / iOS lama
+    }
+  } catch(e) {}
   render();
 </script>
 <script>
