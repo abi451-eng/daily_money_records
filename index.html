@@ -271,6 +271,25 @@
   .wait-tag{color:var(--amber-ink); font-weight:600;}
   #errbox{display:none; white-space:pre-wrap; word-break:break-word; background:#FDECEC; color:#8A1F1F; border:1px solid #E7A6A6; border-radius:12px; padding:12px 14px; margin:0 0 14px; font-size:12px; font-family:monospace; line-height:1.5;}
   .ver-stamp{text-align:center; font-size:11px; color:var(--ink-faint); margin:16px 0 0;}
+  /* ===== Tabbar & tombol tambah (FAB) ===== */
+  main{padding-bottom:128px;}
+  .tabbar{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:440px; height:76px; background:var(--surface); border-top:1px solid var(--line); display:flex; align-items:flex-start; padding:12px 24px 0; z-index:40;}
+  .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; cursor:pointer; color:var(--ink-faint); font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:600; padding:0;}
+  .tab.active{color:var(--gold);}
+  .tab-gap{width:72px; flex-shrink:0;}
+  .fab-backdrop{position:fixed; inset:0; background:rgba(20,18,15,0); pointer-events:none; transition:background .25s; z-index:41;}
+  .fab-backdrop.open{background:rgba(20,18,15,.45); pointer-events:auto;}
+  .fab{position:fixed; bottom:42px; left:50%; transform:translateX(-50%); width:62px; height:62px; border-radius:50%; background:var(--gold); color:#fff; border:4px solid var(--bg); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:43; transition:background .2s;}
+  .fab svg{transition:transform .25s;}
+  .fab.open{background:var(--red);}
+  .fab.open svg{transform:rotate(45deg);}
+  .fab-opt{position:fixed; bottom:114px; left:50%; display:flex; flex-direction:column; align-items:center; gap:7px; opacity:0; transform:translateY(22px) scale(.8); transition:opacity .22s ease, transform .22s ease; pointer-events:none; z-index:44;}
+  .fab-opt.open{opacity:1; transform:translateY(0) scale(1); pointer-events:auto;}
+  .fab-opt .oc{width:54px; height:54px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff;}
+  .fab-opt .olbl{font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--surface); padding:2px 9px; border-radius:8px;}
+  #optMasuk{margin-left:-98px;} #optMasuk .oc{background:var(--green);}
+  #optKeluar{margin-left:44px;} #optKeluar .oc{background:var(--red);}
+  .pending-toggle{border:none; background:transparent; color:var(--amber-ink); font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:12.5px; cursor:pointer; padding:8px 0 0; text-decoration:underline;}
 </style>
 
 </head>
@@ -284,9 +303,6 @@
       </div>
       <h1>Catatan Uang<br>Harian</h1>
     </div>
-    <button class="icon-btn" onclick="openSettings()" aria-label="Pengaturan">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    </button>
   </header>
 
   <main>
@@ -314,17 +330,6 @@
       </div>
     </section>
 
-    <div class="actions">
-      <button class="act masuk" onclick="openForm('masuk')">
-        <span class="circle">+</span>
-        Uang masuk
-      </button>
-      <button class="act keluar" onclick="openForm('keluar')">
-        <span class="circle">&minus;</span>
-        Uang keluar
-      </button>
-    </div>
-
     <div class="summary">
       <div class="scard"><p class="lbl" id="lblMasuk">Masuk bulan ini</p><p class="val green" id="sumMasuk">Rp 0</p></div>
       <div class="scard"><p class="lbl" id="lblKeluar">Keluar bulan ini</p><p class="val red" id="sumKeluar">Rp 0</p></div>
@@ -340,6 +345,30 @@
       Lihat laporan &amp; cetak / simpan PDF
     </button>
   </main>
+
+  <div class="fab-backdrop" id="fabBackdrop" onclick="closeFab()"></div>
+  <div class="fab-opt" id="optMasuk" onclick="chooseAction('masuk')">
+    <div class="oc"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></div>
+    <span class="olbl">Uang Masuk</span>
+  </div>
+  <div class="fab-opt" id="optKeluar" onclick="chooseAction('keluar')">
+    <div class="oc"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+    <span class="olbl">Uang Keluar</span>
+  </div>
+  <button class="fab" id="fabBtn" onclick="toggleFab()" aria-label="Tambah catatan">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <nav class="tabbar">
+    <button class="tab active" onclick="goDashboard()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7h18M3 7l2 12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2l2-12M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+      Dashboard
+    </button>
+    <span class="tab-gap"></span>
+    <button class="tab" onclick="goSettings()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
 </div>
 
 <!-- FORM CATAT -->
@@ -415,7 +444,7 @@
     <button class="data-btn" onclick="document.getElementById('restoreInput').click()"><span class="ic">&#8593;</span>Pulihkan data dari file</button>
     <input id="restoreInput" type="file" accept="application/json,.json" style="display:none" onchange="restoreData(event)">
     <button class="btn-danger-text" onclick="resetData()">Hapus semua data</button>
-    <p class="ver-stamp">Catatan Uang Harian &middot; versi 3.0</p>
+    <p class="ver-stamp">Catatan Uang Harian &middot; versi 4.0</p>
   </div>
 </div>
 
@@ -524,21 +553,32 @@
     save();
   }
 
+  let pendingExpanded = false;
+  function togglePending(){ pendingExpanded = !pendingExpanded; renderPending(); }
   function renderPending(){
     const box = document.getElementById('pendingBox');
     const list = pendingList().slice().sort((a,b)=>(a.tgl+a.waktu).localeCompare(b.tgl+b.waktu));
     if(list.length===0){ box.innerHTML=''; return; }
-    let h = '<div class="pending"><p class="pending-title">Transfer menunggu masuk ('+list.length+')</p>';
-    h += '<p class="pending-note">Belum dihitung ke saldo. Cek dulu, kalau uangnya sudah masuk tekan tombolnya.</p>';
-    list.forEach(e=>{
-      h += '<div class="pending-item">'
-        + '<div class="pi-info"><p class="pi-nm">'+escapeHtml(e.catatan||'Transfer')+'</p>'
-        + '<p class="pi-sub">'+formatRp(e.jumlah)+' &middot; '+dayLabel(e.tgl)+'</p></div>'
-        + '<div class="pi-act">'
-        + '<button class="pi-ok" onclick="confirmPending('+e.id+')">Sudah masuk</button>'
-        + '<button class="pi-cancel" onclick="cancelPending('+e.id+')">Batalkan</button>'
-        + '</div></div>';
-    });
+    const total = list.reduce((s,e)=>s+e.jumlah,0);
+    const banyak = list.length >= 3;               // 3+ diringkas jadi satu kartu
+    const tampil = !banyak || pendingExpanded;
+    let h = '<div class="pending">';
+    h += '<p class="pending-title">'+list.length+' transfer menunggu masuk</p>';
+    h += '<p class="pending-note">Total '+formatRp(total)+', belum dihitung ke saldo. Cek dulu kalau sudah masuk.</p>';
+    if(tampil){
+      list.forEach(e=>{
+        h += '<div class="pending-item">'
+          + '<div class="pi-info"><p class="pi-nm">'+escapeHtml(e.catatan||'Transfer')+'</p>'
+          + '<p class="pi-sub">'+formatRp(e.jumlah)+' &middot; '+dayLabel(e.tgl)+'</p></div>'
+          + '<div class="pi-act">'
+          + '<button class="pi-ok" onclick="confirmPending('+e.id+')">Sudah masuk</button>'
+          + '<button class="pi-cancel" onclick="cancelPending('+e.id+')">Batalkan</button>'
+          + '</div></div>';
+      });
+    }
+    if(banyak){
+      h += '<button class="pending-toggle" onclick="togglePending()">'+(pendingExpanded?'Sembunyikan':'Lihat rincian')+'</button>';
+    }
     h += '</div>';
     box.innerHTML = h;
   }
@@ -682,6 +722,21 @@
       save(); render();
     }
   }
+
+  // ====== Tabbar & tombol tambah (+) ======
+  let fabOpen=false;
+  function setFab(on){
+    document.getElementById('fabBtn').classList.toggle('open',on);
+    document.getElementById('fabBackdrop').classList.toggle('open',on);
+    document.getElementById('optMasuk').classList.toggle('open',on);
+    document.getElementById('optKeluar').classList.toggle('open',on);
+  }
+  function openFab(){ fabOpen=true; setFab(true); }
+  function closeFab(){ fabOpen=false; setFab(false); }
+  function toggleFab(){ fabOpen?closeFab():openFab(); }
+  function chooseAction(j){ closeFab(); openForm(j); }   // pilih -> buka form, pop-up tertutup
+  function goDashboard(){ closeFab(); window.scrollTo({top:0,behavior:'smooth'}); }
+  function goSettings(){ closeFab(); openSettings(); }
 
   // ====== Pengaturan ======
   function openSettings(){
