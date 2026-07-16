@@ -269,6 +269,8 @@
   .dot.wait{background:var(--amber-bg); color:var(--amber-ink);}
   .amt.wait{color:var(--amber-ink);}
   .wait-tag{color:var(--amber-ink); font-weight:600;}
+  #errbox{display:none; white-space:pre-wrap; word-break:break-word; background:#FDECEC; color:#8A1F1F; border:1px solid #E7A6A6; border-radius:12px; padding:12px 14px; margin:0 0 14px; font-size:12px; font-family:monospace; line-height:1.5;}
+  .ver-stamp{text-align:center; font-size:11px; color:var(--ink-faint); margin:16px 0 0;}
 </style>
 
 </head>
@@ -288,6 +290,7 @@
   </header>
 
   <main>
+    <div id="errbox"></div>
     <div id="pendingBox"></div>
 
     <section class="hero">
@@ -412,6 +415,7 @@
     <button class="data-btn" onclick="document.getElementById('restoreInput').click()"><span class="ic">&#8593;</span>Pulihkan data dari file</button>
     <input id="restoreInput" type="file" accept="application/json,.json" style="display:none" onchange="restoreData(event)">
     <button class="btn-danger-text" onclick="resetData()">Hapus semua data</button>
+    <p class="ver-stamp">Catatan Uang Harian &middot; versi 2.0</p>
   </div>
 </div>
 
@@ -428,6 +432,15 @@
 </div>
 
 <script>
+// ====== Pelacak error (menampilkan masalah, bukan layar mati) ======
+  function showFatal(msg){
+    var b=document.getElementById('errbox'); if(!b) return;
+    b.style.display='block';
+    b.textContent='Aplikasi bermasalah. Tolong tunjukkan / foto pesan ini ke Abi:\n\n'+msg;
+  }
+  window.addEventListener('error', function(ev){ showFatal((ev.error&&ev.error.stack)||ev.message||'Error tidak diketahui'); });
+  window.addEventListener('unhandledrejection', function(ev){ showFatal('Promise gagal: '+((ev.reason&&ev.reason.message)||ev.reason)); });
+
 // ====== Penyimpanan ======
   const KEY = 'catatanKeuangan_v1';
   let state = load();
@@ -782,13 +795,18 @@
       else if(mq.addListener) mq.addListener(onSysChange);   // dukungan HP / iOS lama
     }
   } catch(e) {}
-  render();
+  try { render(); } catch(e){ showFatal((e&&e.stack)||String(e)); }
 </script>
 <script>
-  /* Daftarkan service worker untuk mode offline.
-     Catatan: hanya aktif saat dibuka lewat https (mis. Vercel) atau
-     localhost — tidak aktif kalau file dibuka langsung (file://). */
+  /* Daftar service worker + auto-muat-ulang saat ada versi baru,
+     supaya HP tidak nyangkut di salinan lama yang rusak. */
   if ('serviceWorker' in navigator) {
+    var _refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (_refreshing) return;
+      _refreshing = true;
+      window.location.reload();
+    });
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     });
